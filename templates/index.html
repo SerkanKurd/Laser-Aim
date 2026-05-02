@@ -29,17 +29,19 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh;
             padding: 1rem;
+            overflow: hidden;
         }
 
         header {
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             text-align: center;
+            flex-shrink: 0;
         }
 
         h1 {
-            font-size: 2rem;
+            font-size: 1.75rem;
             font-weight: 700;
             background: linear-gradient(to right, #60a5fa, #a78bfa);
             -webkit-background-clip: text;
@@ -50,15 +52,17 @@
         .container {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 1rem;
             max-width: 1400px;
             width: 100%;
+            flex: 1;
+            min-height: 0;
         }
 
         .top-panel {
             background-color: var(--panel-bg);
             border-radius: 1rem;
-            padding: 1.5rem;
+            padding: 1rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
             border: 1px solid #334155;
             display: flex;
@@ -66,20 +70,21 @@
             justify-content: space-around;
             align-items: center;
             gap: 1rem;
+            flex-shrink: 0;
         }
 
         .stat-card {
             background-color: rgba(255, 255, 255, 0.05);
             border-radius: 0.75rem;
-            padding: 1rem 2rem;
+            padding: 0.75rem 1.5rem;
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
             flex: 1;
-            min-width: 150px;
+            min-width: 120px;
         }
 
         .stat-card h3 {
-            font-size: 0.875rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #94a3b8;
@@ -87,8 +92,9 @@
         }
 
         .stat-card .value {
-            font-size: 3rem;
+            font-size: 2.25rem;
             font-weight: 700;
+            line-height: 1;
         }
 
         .stat-card.score .value {
@@ -100,14 +106,13 @@
             color: white;
             border: none;
             border-radius: 0.5rem;
-            padding: 1rem 2rem;
-            font-size: 1.25rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            height: 100%;
         }
 
         button:hover {
@@ -130,12 +135,13 @@
             align-items: center;
             padding: 0;
             width: 100%;
+            flex: 1;
+            min-height: 0;
         }
 
         .video-container img {
             width: 100%;
-            height: auto;
-            max-height: 80vh; /* Ekranın %80'inden fazla yer kaplamasın */
+            height: 100%;
             object-fit: contain;
             border-radius: 0.5rem;
         }
