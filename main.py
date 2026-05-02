@@ -1,5 +1,7 @@
+import lazer_tespit
+
 def main():
-    print("Hello from aim!")
+    lazer_tespit.main()
 
 
 if __name__ == "__main__":
