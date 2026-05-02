@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lazer Vuruş Tespiti</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        header {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.25rem;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .top-panel {
+            background-color: var(--panel-bg);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 0.75rem;
+            padding: 1rem 2rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .stat-card h3 {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card .value {
+            font-size: 3rem;
+            font-weight: 700;
+        }
+
+        .stat-card.score .value {
+            color: var(--success-color);
+        }
+
+        button {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 1rem 2rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            height: 100%;
+        }
+
+        button:hover {
+            background-color: var(--danger-hover);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .video-container {
+            background-color: var(--panel-bg);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            width: 100%;
+        }
+
+        .video-container img {
+            width: 100%;
+            height: auto;
+            max-height: 80vh; /* Ekranın %80'inden fazla yer kaplamasın */
+            object-fit: contain;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Lazer Hedef Sistemi</h1>
+    </header>
+
+    <div class="container">
+        <!-- Skorlar Üstte -->
+        <div class="top-panel">
+            <div class="stat-card">
+                <h3>Vuruş Sayısı</h3>
+                <div class="value" id="hit-count">0</div>
+            </div>
+
+            <div class="stat-card score">
+                <h3>Toplam Puan</h3>
+                <div class="value" id="total-score">0</div>
+            </div>
+
+            <button onclick="clearHits()">Sıfırla / Temizle</button>
+        </div>
+
+        <!-- Video Daha Büyük -->
+        <div class="video-container">
+            <img src="/video_feed" alt="Kamera Akışı Bekleniyor...">
+        </div>
+    </div>
+
+    <script>
+        function updateStats() {
+            fetch('/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('hit-count').innerText = data.hit_count;
+                    document.getElementById('total-score').innerText = data.total_score;
+                })
+                .catch(err => console.error("Stats güncellenemedi:", err));
+        }
+
+        function clearHits() {
+            fetch('/clear', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    updateStats();
+                }
+            })
+            .catch(err => console.error("Temizleme hatası:", err));
+        }
+
+        setInterval(updateStats, 500);
+        updateStats();
+    </script>
+</body>
+</html>
