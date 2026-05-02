@@ -145,6 +145,28 @@
             object-fit: contain;
             border-radius: 0.5rem;
         }
+
+        .settings-btn {
+            background-color: #334155;
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .settings-btn:hover {
+            background-color: #475569;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -165,6 +187,8 @@
                 <h3>Toplam Puan</h3>
                 <div class="value" id="total-score">0</div>
             </div>
+
+            <a href="/settings" class="settings-btn">⚙️ Ayarlar</a>
 
             <button onclick="clearHits()">Sıfırla / Temizle</button>
         </div>

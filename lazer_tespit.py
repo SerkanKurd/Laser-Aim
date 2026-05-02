@@ -1,13 +1,66 @@
 import cv2
 import numpy as np
 import math
+import json
+import os
+
+SETTINGS_FILE = "settings.json"
 
 class LaserDetector:
     def __init__(self):
         self.cap = cv2.VideoCapture(0)
         self.hits = []
         self.laser_was_on = False
+        
+        # Önce varsayılanları yükle
+        self.restore_defaults(save=False)
+        # Varsa dosyadan ayarları ez
+        self.load_settings()
+
+    def restore_defaults(self, save=True):
         self.brightness_threshold = 200
+        self.target_scale = 1.0
+        self.mirror_effect = False
+        self.laser_color = 'red'
+        if save:
+            self.save_settings()
+
+    def load_settings(self):
+        if os.path.exists(SETTINGS_FILE):
+            try:
+                with open(SETTINGS_FILE, 'r') as f:
+                    data = json.load(f)
+                self.update_config(data, save=False)
+            except Exception as e:
+                print(f"Ayarlar yuklenirken hata: {e}")
+
+    def save_settings(self):
+        try:
+            with open(SETTINGS_FILE, 'w') as f:
+                json.dump(self.get_config(), f, indent=4)
+        except Exception as e:
+            print(f"Ayarlar kaydedilirken hata: {e}")
+
+    def get_config(self):
+        return {
+            "brightness_threshold": self.brightness_threshold,
+            "target_scale": self.target_scale,
+            "mirror_effect": self.mirror_effect,
+            "laser_color": self.laser_color
+        }
+
+    def update_config(self, data, save=True):
+        if 'brightness_threshold' in data:
+            self.brightness_threshold = int(data['brightness_threshold'])
+        if 'target_scale' in data:
+            self.target_scale = float(data['target_scale'])
+        if 'mirror_effect' in data:
+            self.mirror_effect = bool(data['mirror_effect'])
+        if 'laser_color' in data:
+            self.laser_color = str(data['laser_color'])
+            
+        if save:
+            self.save_settings()
 
     def clear_hits(self):
         self.hits.clear()
@@ -29,31 +82,36 @@ class LaserDetector:
             if not ret:
                 break
 
-            # Ayna etkisi
-            frame = cv2.flip(frame, 1)
+            if self.mirror_effect:
+                frame = cv2.flip(frame, 1)
 
             height, width = frame.shape[:2]
             center = (width // 2, height // 2)
 
             # --- Hedef Tahtası Özellikleri ---
-            max_radius = min(height, width) // 3  # Ekranın kısa kenarının 1/3'ü kadar büyük
+            base_radius = min(height, width) // 3
+            max_radius = max(10, int(base_radius * self.target_scale))  # Sıfır veya negatif olmasını engelle
             num_rings = 5  # 5 adet iç içe daire
             ring_step = max_radius // num_rings
 
             # --- Lazer Tespiti ---
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-            lower_red1 = np.array([0, 100, 100])
-            upper_red1 = np.array([10, 255, 255])
-            lower_red2 = np.array([160, 100, 100])
-            upper_red2 = np.array([180, 255, 255])
-
-            mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
-            mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
-            red_mask = cv2.bitwise_or(mask1, mask2)
+            if self.laser_color == 'green':
+                lower_green = np.array([40, 100, 100])
+                upper_green = np.array([80, 255, 255])
+                color_mask = cv2.inRange(hsv, lower_green, upper_green)
+            else: # red
+                lower_red1 = np.array([0, 100, 100])
+                upper_red1 = np.array([10, 255, 255])
+                lower_red2 = np.array([160, 100, 100])
+                upper_red2 = np.array([180, 255, 255])
+                mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+                mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+                color_mask = cv2.bitwise_or(mask1, mask2)
 
             v_channel = hsv[:, :, 2]
-            masked_v = cv2.bitwise_and(v_channel, v_channel, mask=red_mask)
+            masked_v = cv2.bitwise_and(v_channel, v_channel, mask=color_mask)
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(masked_v)
 
             is_laser_on = max_val >= self.brightness_threshold

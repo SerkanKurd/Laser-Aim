@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayarlar - Lazer Vuruş Tespiti</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .back-btn {
+            background-color: #334155;
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            background-color: #475569;
+        }
+
+        .reset-btn {
+            background-color: var(--danger-color);
+            color: white;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .reset-btn:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .preview-container {
+            background-color: var(--panel-bg);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            aspect-ratio: 16/9;
+            max-height: 400px;
+        }
+
+        .preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .settings-panel {
+            background-color: var(--panel-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .setting-group label {
+            font-weight: 600;
+            color: #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .setting-group input[type=range] {
+            width: 100%;
+            accent-color: var(--accent-color);
+        }
+
+        .setting-group select {
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            background-color: #0f172a;
+            color: white;
+            border: 1px solid #334155;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .checkbox-group label {
+            cursor: pointer;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #334155;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Sistem Ayarları</h1>
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="restoreDefaults()" class="reset-btn">↺ Varsayılanlar</button>
+                <a href="/" class="back-btn">⬅ Ana Sayfa</a>
+            </div>
+        </header>
+
+        <div class="preview-container">
+            <img src="/video_feed" alt="Kamera Önizlemesi">
+        </div>
+
+        <div class="settings-panel">
+            
+            <div class="setting-group">
+                <label>
+                    Lazer Parlaklık Eşiği 
+                    <span id="brightness-val">200</span>
+                </label>
+                <input type="range" id="brightness" min="0" max="255" step="1" oninput="updateSetting('brightness_threshold', this.value, 'brightness-val')">
+                <small style="color: #64748b;">Lazerin algılanması için gereken minimum parlaklık seviyesi.</small>
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    Hedef Kalibrasyonu
+                    <span id="scale-val">1.0x</span>
+                </label>
+                <input type="range" id="scale" min="0.1" max="3.0" step="0.1" oninput="updateSetting('target_scale', this.value, 'scale-val', 'x')">
+                <small style="color: #64748b;">Hedef tahtasındaki iç içe dairelerin büyüklüğü.</small>
+            </div>
+
+            <div class="setting-group">
+                <label>Lazer Rengi</label>
+                <select id="color" onchange="updateSetting('laser_color', this.value, null)">
+                    <option value="red">Kırmızı Lazer</option>
+                    <option value="green">Yeşil Lazer</option>
+                </select>
+                <small style="color: #64748b;">Algılanacak lazerin rengi.</small>
+            </div>
+
+            <div class="setting-group checkbox-group">
+                <div>
+                    <label style="display:inline;">Ayna Etkisi (Ters Görüntü)</label>
+                    <div style="color: #64748b; font-size: 0.8rem; margin-top: 0.25rem;">Kamera görüntüsünü yatay olarak çevirir.</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="mirror" onchange="updateSetting('mirror_effect', this.checked, null)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function updateUI(data) {
+            document.getElementById('brightness').value = data.brightness_threshold;
+            document.getElementById('brightness-val').innerText = data.brightness_threshold;
+            
+            document.getElementById('scale').value = data.target_scale;
+            document.getElementById('scale-val').innerText = data.target_scale.toFixed(1) + 'x';
+            
+            document.getElementById('color').value = data.laser_color;
+            document.getElementById('mirror').checked = data.mirror_effect;
+        }
+
+        // Sayfa yüklendiğinde ayarları çek
+        fetch('/api/config')
+            .then(res => res.json())
+            .then(data => updateUI(data))
+            .catch(err => console.error("Ayarlar yüklenemedi:", err));
+
+        // Ayar değiştiğinde sunucuya gönder
+        function updateSetting(key, value, labelId, suffix='') {
+            if(labelId) {
+                let displayVal = key === 'target_scale' ? parseFloat(value).toFixed(1) : value;
+                document.getElementById(labelId).innerText = displayVal + suffix;
+            }
+
+            let payload = {};
+            payload[key] = value;
+
+            fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(err => console.error("Ayar kaydedilemedi:", err));
+        }
+
+        function restoreDefaults() {
+            if(!confirm("Tüm ayarları varsayılanlara döndürmek istediğinize emin misiniz?")) return;
+            
+            fetch('/api/config/reset', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        updateUI(data.config);
+                    }
+                })
+                .catch(err => console.error("Sıfırlama hatası:", err));
+        }
+    </script>
+</body>
+</html>

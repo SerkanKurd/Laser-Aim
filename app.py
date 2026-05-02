@@ -25,6 +25,27 @@ def clear():
     detector.clear_hits()
     return jsonify({"status": "success"})
 
+@app.route('/settings')
+def settings():
+    return render_template('settings.html')
+
+@app.route('/api/config', methods=['GET', 'POST'])
+def api_config():
+    from flask import request
+    if request.method == 'POST':
+        data = request.get_json()
+        if data:
+            detector.update_config(data)
+            return jsonify({"status": "success", "config": detector.get_config()})
+        return jsonify({"status": "error", "message": "No data provided"}), 400
+    
+    return jsonify(detector.get_config())
+
+@app.route('/api/config/reset', methods=['POST'])
+def api_config_reset():
+    detector.restore_defaults()
+    return jsonify({"status": "success", "config": detector.get_config()})
+
 if __name__ == '__main__':
     # Run the app, accessible on all network interfaces
     app.run(host='0.0.0.0', port=4444, debug=True)
