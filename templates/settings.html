@@ -258,6 +258,37 @@
                 </label>
             </div>
 
+            <hr style="border: 1px solid #334155; margin: 1rem 0;">
+
+            <div class="setting-group checkbox-group">
+                <div>
+                    <label style="display:inline;">Sıfırlama Modu (Zeroing)</label>
+                    <div style="color: #64748b; font-size: 0.8rem; margin-top: 0.25rem;">Lazerin vuruş noktasını düzeltmek için sıfırlama modunu açın.</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="zeroing_mode" onchange="updateSetting('zeroing_mode', this.checked, null)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    Yan Ayarı (X Eksen)
+                    <span id="x-offset-val">0</span>
+                </label>
+                <input type="range" id="x_offset" min="-300" max="300" step="1" oninput="updateSetting('x_offset', this.value, 'x-offset-val')">
+                <small style="color: #64748b;">Artı kılı sağa sola kaydırır.</small>
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    Yükseliş Ayarı (Y Eksen)
+                    <span id="y-offset-val">0</span>
+                </label>
+                <input type="range" id="y_offset" min="-300" max="300" step="1" oninput="updateSetting('y_offset', this.value, 'y-offset-val')">
+                <small style="color: #64748b;">Artı kılı yukarı aşağı kaydırır.</small>
+            </div>
+
         </div>
     </div>
 
@@ -269,8 +300,16 @@
             document.getElementById('scale').value = data.target_scale;
             document.getElementById('scale-val').innerText = data.target_scale.toFixed(1) + 'x';
             
-            document.getElementById('color').value = data.laser_color;
-            document.getElementById('mirror').checked = data.mirror_effect;
+            document.getElementById('color').value = data.laser_color || 'red';
+            document.getElementById('mirror').checked = data.mirror_effect || false;
+            
+            document.getElementById('zeroing_mode').checked = data.zeroing_mode || false;
+            
+            document.getElementById('x_offset').value = data.x_offset || 0;
+            document.getElementById('x-offset-val').innerText = data.x_offset || 0;
+            
+            document.getElementById('y_offset').value = data.y_offset || 0;
+            document.getElementById('y-offset-val').innerText = data.y_offset || 0;
         }
 
         // Sayfa yüklendiğinde ayarları çek

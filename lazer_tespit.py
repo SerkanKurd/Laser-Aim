@@ -22,6 +22,9 @@ class LaserDetector:
         self.target_scale = 1.0
         self.mirror_effect = False
         self.laser_color = 'red'
+        self.x_offset = 0
+        self.y_offset = 0
+        self.zeroing_mode = False
         if save:
             self.save_settings()
 
@@ -46,7 +49,10 @@ class LaserDetector:
             "brightness_threshold": self.brightness_threshold,
             "target_scale": self.target_scale,
             "mirror_effect": self.mirror_effect,
-            "laser_color": self.laser_color
+            "laser_color": self.laser_color,
+            "x_offset": self.x_offset,
+            "y_offset": self.y_offset,
+            "zeroing_mode": self.zeroing_mode
         }
 
     def update_config(self, data, save=True):
@@ -58,6 +64,12 @@ class LaserDetector:
             self.mirror_effect = bool(data['mirror_effect'])
         if 'laser_color' in data:
             self.laser_color = str(data['laser_color'])
+        if 'x_offset' in data:
+            self.x_offset = int(data['x_offset'])
+        if 'y_offset' in data:
+            self.y_offset = int(data['y_offset'])
+        if 'zeroing_mode' in data:
+            self.zeroing_mode = bool(data['zeroing_mode'])
             
         if save:
             self.save_settings()
@@ -118,8 +130,11 @@ class LaserDetector:
 
             # Lazer algılandıysa VE bir önceki karede yanmıyorsa (yeni "tetik" çekildiyse)
             if is_laser_on and not self.laser_was_on:
-                # Vuruş noktasının ekran merkezine (hedefin merkezi) olan uzaklığını hesapla
-                distance = math.hypot(max_loc[0] - center[0], max_loc[1] - center[1])
+                # Vuruş noktasını sıfırlama ayarlarına göre düzelt (merkeze göre ofseti düş)
+                corrected_loc = (max_loc[0] - self.x_offset, max_loc[1] - self.y_offset)
+                
+                # Düzeltilmiş noktanın hedef merkezine uzaklığını hesapla
+                distance = math.hypot(corrected_loc[0] - center[0], corrected_loc[1] - center[1])
 
                 hit_score = 0
                 # İçten dışa doğru mesafeyi kontrol ederek puanı belirle
@@ -129,49 +144,61 @@ class LaserDetector:
                         hit_score = (num_rings - i + 1) * 10
                         break
 
-                # Bulunan vuruşu listeye ekle (Daire dışında kalsa bile 0 puanla karavana olarak ekler)
-                self.hits.append({"pos": max_loc, "score": hit_score})
+                # Bulunan vuruşu listeye ekle (Düzeltilmiş koordinatla)
+                self.hits.append({"pos": corrected_loc, "score": hit_score})
 
             # Bir sonraki karede kontrol edebilmek için lazerin güncel durumunu kaydet
             self.laser_was_on = is_laser_on
 
             # --- Çizim İşlemleri ---
 
-            # 1. Hedef Tahtasını Çiz
-            # Dıştan içe doğru çiziyoruz ki yazılar iç içe daha düzgün gözüksün
-            for i in range(num_rings, 0, -1):
-                radius = i * ring_step
-                ring_score = (num_rings - i + 1) * 10
-                cv2.circle(
-                    frame, center, radius, (255, 0, 0), 2
-                )  # Mavi renkte hedef halkaları
+            if self.zeroing_mode:
+                # SIFIRLAMA MODU: Hedef daireleri çizilmez, sadece ofsetli (kaydırılmış) artı kıl çizilir.
+                zeroing_center = (center[0] + self.x_offset, center[1] + self.y_offset)
+                
+                # Sıfırlama artı kılı (Sarı renkli, daha belirgin)
+                cv2.line(frame, (zeroing_center[0] - 20, zeroing_center[1]), (zeroing_center[0] + 20, zeroing_center[1]), (0, 255, 255), 2)
+                cv2.line(frame, (zeroing_center[0], zeroing_center[1] - 20), (zeroing_center[0], zeroing_center[1] + 20), (0, 255, 255), 2)
+                
+                # Ekranda uyarı yazısı
+                cv2.putText(frame, "SIFIRLAMA MODU AKTIF", (width // 2 - 120, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                
+            else:
+                # NORMAL MOD: 1. Hedef Tahtasını Çiz
+                # Dıştan içe doğru çiziyoruz ki yazılar iç içe daha düzgün gözüksün
+                for i in range(num_rings, 0, -1):
+                    radius = i * ring_step
+                    ring_score = (num_rings - i + 1) * 10
+                    cv2.circle(
+                        frame, center, radius, (255, 0, 0), 2
+                    )  # Mavi renkte hedef halkaları
 
-                # Halkaların üzerine puanları yazdır
-                cv2.putText(
+                    # Halkaların üzerine puanları yazdır
+                    cv2.putText(
+                        frame,
+                        str(ring_score),
+                        (center[0] - 10, center[1] - radius + 20),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (255, 0, 0),
+                        2,
+                    )
+
+                # Merkeze ufak bir artı (+) çiz (Tam 12'den vurma noktası - Kırmızı)
+                cv2.line(
                     frame,
-                    str(ring_score),
-                    (center[0] - 10, center[1] - radius + 20),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (255, 0, 0),
+                    (center[0] - 10, center[1]),
+                    (center[0] + 10, center[1]),
+                    (0, 0, 255),
                     2,
                 )
-
-            # Merkeze ufak bir artı (+) çiz (Tam 12'den vurma noktası - Kırmızı)
-            cv2.line(
-                frame,
-                (center[0] - 10, center[1]),
-                (center[0] + 10, center[1]),
-                (0, 0, 255),
-                2,
-            )
-            cv2.line(
-                frame,
-                (center[0], center[1] - 10),
-                (center[0], center[1] + 10),
-                (0, 0, 255),
-                2,
-            )
+                cv2.line(
+                    frame,
+                    (center[0], center[1] - 10),
+                    (center[0], center[1] + 10),
+                    (0, 0, 255),
+                    2,
+                )
 
             # 2. Vuruşları Çiz ve Toplam Puanı Hesapla
             total_score = 0
