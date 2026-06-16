@@ -167,6 +167,42 @@
             background-color: #475569;
             transform: translateY(-2px);
         }
+
+        .audio-warning-banner {
+            background: linear-gradient(to right, #f59e0b, #d97706);
+            color: #0f172a;
+            font-weight: bold;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+            animation: pulse 2s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            border: 1px solid #f59e0b;
+            flex-shrink: 0;
+            width: 100%;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+            }
+            50% {
+                transform: scale(1.01);
+                box-shadow: 0 4px 25px rgba(245, 158, 11, 0.5);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+            }
+        }
     </style>
 </head>
 <body>
@@ -176,6 +212,10 @@
     </header>
 
     <div class="container">
+        <!-- Ses Etkinleştirme Uyarısı -->
+        <div id="audio-warning" class="audio-warning-banner">
+            ⚠️ Sesli bildirimlerin çalışması için bu çubuğa veya sayfada herhangi bir yere TIKLAYIN!
+        </div>
         <!-- Skorlar Üstte -->
         <div class="top-panel">
             <div class="stat-card">
@@ -190,6 +230,10 @@
 
             <a href="/settings" class="settings-btn">⚙️ Ayarlar</a>
 
+            <button id="sound-toggle-btn" class="settings-btn" onclick="toggleSound()" style="background-color: var(--success-color);">
+                🔊 Ses Açık
+            </button>
+
             <button onclick="clearHits()">Sıfırla / Temizle</button>
         </div>
 
@@ -200,11 +244,176 @@
     </div>
 
     <script>
+        // Ses dosyalarını önceden yükle (Sıfır gecikmeli oynatma için)
+        const audioFiles = {
+            0: new Audio('/static/audio/0.m4a'),
+            10: new Audio('/static/audio/10.m4a'),
+            20: new Audio('/static/audio/20.m4a'),
+            30: new Audio('/static/audio/30.m4a'),
+            40: new Audio('/static/audio/40.m4a'),
+            50: new Audio('/static/audio/50.m4a')
+        };
+
+        // Seslerin hazır olması için yüklemeyi başlat
+        Object.values(audioFiles).forEach(audio => {
+            audio.load();
+        });
+
+        let isSoundEnabled = true;
+        let isAudioUnlocked = false;
+        let isFirstLoad = true;
+        let lastHitCount = 0;
+        let lastHitScores = [];
+
+        // Tarayıcı autoplay engellerini aşmak için tıklama/dokunma ile ses motorunun kilidini açma
+        function unlockAudio() {
+            if (isAudioUnlocked) return;
+
+            // TTS'i uyandır
+            if (window.speechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance('');
+                window.speechSynthesis.speak(utterance);
+            }
+
+            // Ses dosyalarının kilidini aç (Sessizce başlatip hemen pause et)
+            Object.values(audioFiles).forEach(audio => {
+                const oldVolume = audio.volume;
+                audio.volume = 0;
+                audio.play()
+                    .then(() => {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        audio.volume = oldVolume;
+                    })
+                    .catch(e => console.log("Ses kilidi açma:", e));
+            });
+
+            isAudioUnlocked = true;
+
+            // Uyarı çubuğunu gizle
+            const banner = document.getElementById('audio-warning');
+            if (banner) {
+                banner.style.display = 'none';
+            }
+
+            // Kullanıcıya sesin açıldığını teyit etmek için kısa bir onay sesi çal
+            setTimeout(() => {
+                if (audioFiles[50]) {
+                    audioFiles[50].play().catch(e => console.log("Onay sesi çalınamadı:", e));
+                }
+            }, 150);
+        }
+
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('touchstart', unlockAudio);
+
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            const btn = document.getElementById('sound-toggle-btn');
+            if (isSoundEnabled) {
+                btn.innerHTML = '🔊 Ses Açık';
+                btn.style.backgroundColor = 'var(--success-color)';
+            } else {
+                btn.innerHTML = '🔇 Ses Kapalı';
+                btn.style.backgroundColor = '#334155';
+            }
+        }
+
+        function speakScore(score) {
+            if (!isSoundEnabled) return;
+
+            // Eğer önceden kaydedilmiş ses dosyası varsa doğrudan ve anında oynat (Gecikmesiz)
+            const audio = audioFiles[score];
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(e => {
+                    console.warn("Ses dosyası oynatılamadı, TTS kullanılıyor:", e);
+                    speakWithTTS(score);
+                });
+            } else {
+                speakWithTTS(score);
+            }
+        }
+
+        function speakWithTTS(score) {
+            // Puanları Türkçe yazıya dönüştür
+            let text = "";
+            if (score === 0) {
+                text = "Karavana";
+            } else if (score === 10) {
+                text = "On puan";
+            } else if (score === 20) {
+                text = "Yirmi puan";
+            } else if (score === 30) {
+                text = "Otuz puan";
+            } else if (score === 40) {
+                text = "Kırk puan";
+            } else if (score === 50) {
+                text = "Elli puan";
+            } else {
+                text = score + " puan";
+            }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'tr-TR';
+                
+                const voices = window.speechSynthesis.getVoices();
+                let trVoice = voices.find(v => v.lang === 'tr-TR');
+                if (!trVoice) {
+                    trVoice = voices.find(v => v.lang.includes('tr') || v.lang.startsWith('tr-'));
+                }
+                
+                if (trVoice) {
+                    utterance.voice = trVoice;
+                }
+                
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
         function updateStats() {
             fetch('/stats')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('hit-count').innerText = data.hit_count;
+                    const currentHitCount = data.hit_count;
+                    const currentHitScores = data.hit_scores || [];
+
+                    // Sayfa ilk yüklendiğinde eski vuruşları seslendirmemek için başlangıç değerlerini al
+                    if (isFirstLoad) {
+                        lastHitCount = currentHitCount;
+                        lastHitScores = [...currentHitScores];
+                        isFirstLoad = false;
+                        document.getElementById('hit-count').innerText = currentHitCount;
+                        document.getElementById('total-score').innerText = data.total_score;
+                        return;
+                    }
+
+                    // Eğer vuruş sayısı azaldıysa (Temizleme/Sıfırlama yapıldıysa)
+                    if (currentHitCount < lastHitCount) {
+                        lastHitCount = currentHitCount;
+                        lastHitScores = [...currentHitScores];
+                        document.getElementById('hit-count').innerText = currentHitCount;
+                        document.getElementById('total-score').innerText = data.total_score;
+                        return;
+                    }
+
+                    // Yeni vuruş(lar) algılandıysa seslendir
+                    if (currentHitCount > lastHitCount) {
+                        for (let i = lastHitCount; i < currentHitCount; i++) {
+                            const score = currentHitScores[i];
+                            speakScore(score);
+                        }
+                        lastHitCount = currentHitCount;
+                        lastHitScores = [...currentHitScores];
+                    }
+
+                    document.getElementById('hit-count').innerText = currentHitCount;
                     document.getElementById('total-score').innerText = data.total_score;
                 })
                 .catch(err => console.error("Stats güncellenemedi:", err));
@@ -223,7 +432,14 @@
             .catch(err => console.error("Temizleme hatası:", err));
         }
 
-        setInterval(updateStats, 500);
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                // Seslerin arka planda yüklenmesi için tetiklenir
+            };
+        }
+
+        // Çok daha hızlı algılaması için tarama sıklığını 500ms'den 100ms'e çektik
+        setInterval(updateStats, 100);
         updateStats();
     </script>
 </body>

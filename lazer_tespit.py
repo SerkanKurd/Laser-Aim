@@ -257,7 +257,8 @@ class LaserDetector:
         total_score = sum(hit['score'] for hit in self.hits)
         return {
             "hit_count": len(self.hits),
-            "total_score": total_score
+            "total_score": total_score,
+            "hit_scores": [hit['score'] for hit in self.hits]
         }
 
     def __del__(self):
